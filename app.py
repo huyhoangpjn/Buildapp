@@ -1,5 +1,6 @@
 from Astar_algo import *
 from Dijkstra_algo_C import *
+from Gif_Image import *
 import pygame
 import sys
 import utm
@@ -19,13 +20,15 @@ def get_cache_map_gps(west,east,south,north,width,height):
     den_y = (max_y - min_y)/height
     return min_x, min_y, den_x, den_y
 
-def draw_src(surface,x,y):
-    color = '#FF0000'
-    pygame.draw.circle(surface,color,(x,y),4)
+def get_coor(x,y):
+    return utm.to_latlon(x,y,48,'P')
 
+def draw_src(surface,x,y):
+    icon=pygame.image.load('src-pin.png')
+    surface.blit(icon, (x - 6, y - 19))
 def draw_des(surface,x,y):
-    color = '#17FF00'
-    pygame.draw.circle(surface,color,(x,y),4)
+    icon = pygame.image.load('des-pin.png')
+    surface.blit(icon, (x - 6, y - 19))
 
 def draw_path(surface,network_type,path,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix):
     if network_type == 0:
@@ -54,9 +57,6 @@ def get_index_point(screen,x_click,y_click,x_coor,y_coor,min_x,min_y,den_x,den_y
     pygame.display.update()
     return index
 
-#def traffic_state():
-#Code...
-#Code...
 class Button:
     def __init__(self,text,width,height,pos,elevation,top_color,color_temp):
         self.press = False
@@ -160,12 +160,14 @@ root = os.path.dirname(os.path.realpath(__file__))
 image_dir = root + '\map\HCM_map.png'
 graph_dir = root + '\graph'
 data_dir = root + '\data'
+logo_dir = root + '\Earth.gif'
 
 pygame.init()
 pygame.display.set_caption("HCM map")
 screen = pygame.display.set_mode((1700,1000))
 image = pygame.image.load(image_dir)
-gui_font = pygame.font.Font(None,30)
+gui_font = pygame.font.SysFont('Arial',30)
+
 button_run = Button("FIND PATH",150,50,(1465,800),6,'#0032FF','#00AAFF')
 button_res = Button("RESTART",150,50,(1465,870),6,'#FD1414','#FF5A5A')
 net_option = OptionBox(1465,400,150,30,(150, 150, 150),(100, 200, 255),gui_font,["Car","Motorbike"])
@@ -181,12 +183,18 @@ car = True
 
 screen.fill('#FFFFFF')
 display_text(screen,"TYPE:",gui_font,'#000000',(1410,400),30,42)
+display_text(screen,"FROM",gui_font,'#000000',(1400,550),30,42)
+display_text(screen,"TO",gui_font,'#000000',(1400,650),30,42)
+logo= GIFImage(logo_dir)
 
 while True:
     #if first_screen not pass
     #else...
     pygame.draw.rect(screen,'#000000',pygame.Rect((0,0),(1380,1000)))
     screen.blit(image,(1,1))
+    pygame.draw.rect(screen, (0, 0, 0), (1450, 545, 240, 50), 2)
+    pygame.draw.rect(screen, (0, 0, 0), (1450, 645, 240, 50), 2)
+    logo.render(screen,(1400,50))
     button_run.draw()
     button_res.draw()
     pygame.display.update()
@@ -202,10 +210,18 @@ while True:
                     if not src_exist:
                         draw_src(image,x_click,y_click)
                         x_src, y_src = x_click,y_click
+                        lat_utm, lon_utm = Pixel_to_utm(x_click, y_click, min_x, min_y, den_x, den_y)
+                        lat,lon = get_coor(lat_utm,lon_utm)
+                        display_text(screen, "Lat:" + str(round(lat,12)), gui_font, '#000000', (1550, 550), 10, 21)
+                        display_text(screen, "Long:" + str(round(lon,12)), gui_font, '#000000', (1563, 570), 10, 21)
                         src_exist = True
                     else:
                         draw_des(image,x_click,y_click)
                         x_des, y_des = x_click,y_click
+                        lat_utm, lon_utm = Pixel_to_utm(x_click, y_click, min_x, min_y, den_x, den_y)
+                        lat, lon = get_coor(lat_utm, lon_utm)
+                        display_text(screen, "Lat:" + str(round(lat, 12)), gui_font, '#000000', (1550, 650), 10, 21)
+                        display_text(screen, "Long:" + str(round(lon, 12)), gui_font, '#000000', (1563, 670), 10, 21)
                         des_exist = True
 
                 if button_run.press:
@@ -236,7 +252,8 @@ while True:
                     src_exist = False
                     des_exist = False
                     screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,60)))
-    
+                    screen.fill('#FFFFFF', rect=pygame.Rect((1450, 545), (240, 50)))
+                    screen.fill('#FFFFFF', rect=pygame.Rect((1450, 645), (240, 50)))
     screen.fill('#FFFFFF',rect=pygame.Rect((1381,430),(320,100)))
     graph = net_option.update(events)
     if graph == 0:
