@@ -55,6 +55,7 @@ def get_index_point(screen,x_click,y_click,x_coor,y_coor,min_x,min_y,den_x,den_y
     return index
 
 #def traffic_state():
+#Code...
 
 class Button:
     def __init__(self,text,width,height,pos,elevation,top_color,color_temp):
