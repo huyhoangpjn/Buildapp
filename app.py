@@ -31,11 +31,17 @@ def draw_des(surface,x,y):
     icon = pygame.image.load('des-pin.png')
     surface.blit(icon, (x - 6, y - 19))
 
+def draw_traffic_point(surface,x,y):
+    color = '#FF9300'
+    pygame.draw.circle(surface,color,(x,y),4)
+
 def draw_path(surface,network_type,path,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix):
     if network_type == 0:
         color = '#004DFE'
+    elif network_type == 1:
+        color = '#00C1FF'
     else:
-        color = '#FE6C00'
+        color = '#FF9300'
     for i in range(0,len(path)-1):
         sx = (x_coor[path[i]] - min_x)/den_x
         tx = (x_coor[path[i+1]] - min_x)/den_x
@@ -43,7 +49,7 @@ def draw_path(surface,network_type,path,x_coor,y_coor,min_x,min_y,den_x,den_y,st
         sy = (- y_coor[path[i]] - min_y)/den_y
         ty = (- y_coor[path[i+1]] - min_y)/den_y
 
-        pygame.draw.line(surface,color,(sx - start_pos_pix,sy - start_pos_pix),(tx - start_pos_pix,ty - start_pos_pix),width=3)
+        pygame.draw.line(surface,color,(sx + start_pos_pix,sy + start_pos_pix),(tx + start_pos_pix,ty + start_pos_pix),width=3)
 
 def display_text(screen,text,font,color,pos,width,height):
     text = font.render(text, True, color)
@@ -53,7 +59,7 @@ def display_text(screen,text,font,color,pos,width,height):
 
 def get_index_point(screen,x_click,y_click,x_coor,y_coor,min_x,min_y,den_x,den_y):
     screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,60)))
-    x_src, y_src = Pixel_to_utm(x_click + 1,y_click + 1,min_x,min_y,den_x,den_y)
+    x_src, y_src = Pixel_to_utm(x_click - 1,y_click - 1,min_x,min_y,den_x,den_y)
     index = get_nearest_node(x_coor,y_coor,[x_src,y_src]) 
     pygame.display.update()
     return index
@@ -156,6 +162,11 @@ class OptionBox():
                     return self.active_option
         return -1
 
+def jam_state_enable(graph,path_jam):
+    max_weight = 605.7 #Founded in Astar_algo.py
+    jam_gain = 10
+    for i in range(0,len(path_jam)-1):
+        graph[path_jam[i]][path_jam[i+1]][0]['weight'] = jam_gain*max_weight
 
 root = os.path.dirname(os.path.realpath(__file__))
 image_dir = root + '\map\HCM_map.png'
@@ -181,6 +192,8 @@ des_exist = False
 car = True
 #car -- 0
 #motorbike -- 1
+#jam -- 2
+src_jam = False
 
 screen.fill('#FFFFFF')
 display_text(screen,"TYPE:",gui_font,'#000000',(1410,400),30,42)
@@ -240,6 +253,7 @@ while True:
                                 draw_path(image,0,path,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
                             else:
                                 draw_path(image,1,path,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
+                            screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,60)))
                             display_text(screen,f"Finding path in {(end - start):.4f} s",pygame.font.Font(None, 20),'#000000',(1490,720),100,100)
                         except:
                             screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,60)))
@@ -252,9 +266,34 @@ while True:
                     image = pygame.image.load(image_dir)
                     src_exist = False
                     des_exist = False
+                    src_jam = False
+                    if car:
+                        G = load_graph_gpickle(graph_dir + '\Graph_car.gpickle')
+                    else:
+                        G = load_graph_gpickle(graph_dir + '\Graph_motorbike.gpickle')
                     screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,60)))
                     screen.fill('#FFFFFF', rect=pygame.Rect((1450, 545), (240, 50)))
                     screen.fill('#FFFFFF', rect=pygame.Rect((1450, 645), (240, 50)))
+
+            if event.button == 3:
+                x_click, y_click = pygame.mouse.get_pos()
+                if x_click < 1379:
+                    if not src_jam:
+                        x_src_jam, y_src_jam = x_click, y_click
+                        draw_traffic_point(image,x_click,y_click)
+                        src_jam = True
+                    else:
+                        draw_traffic_point(image,x_click,y_click)
+                        index_src_jam = get_index_point(screen,x_src_jam,y_src_jam,x_coor,y_coor,min_x,min_y,den_x,den_y)
+                        index_des_jam = get_index_point(screen,x_click,y_click,x_coor,y_coor,min_x,min_y,den_x,den_y)
+                        path_jam = astar(G,index_src_jam,index_des_jam,x_coor,y_coor)
+                        jam_state_enable(G,path_jam)
+                        path_jam = [path_jam[0],path_jam[int(len(path_jam)/2)],path_jam[len(path_jam)-1]]
+                        draw_path(image,2,path_jam,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
+                        src_jam = False   
+
+
+
     screen.fill('#FFFFFF',rect=pygame.Rect((1381,430),(320,100)))
     graph = net_option.update(events)
     if graph == 0:

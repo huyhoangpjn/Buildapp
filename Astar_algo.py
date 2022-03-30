@@ -88,3 +88,8 @@ def get_nearest_node(x,y,point):
     return index
 
 #ConvertToGraph("HCM_data_pedestrian.pypgr","Graph_pedestrian")
+# x_coor,y_coor = get_coordinate('data\HCM_data_car.pycgr')
+# G = load_graph_gpickle('graph/Graph_car.gpickle')
+# # print(astar(G,27958,7804,x_coor,y_coor))
+# max_weight = max(dict(G.edges).items(), key=lambda x: x[1]["weight"])
+# print(max_weight)
