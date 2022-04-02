@@ -1,3 +1,4 @@
+from pickletools import optimize
 from Astar_algo import *
 from Dijkstra_algo_C import *
 from Gif_Image import *
@@ -40,8 +41,10 @@ def draw_path(surface,network_type,path,x_coor,y_coor,min_x,min_y,den_x,den_y,st
         color = '#004DFE'
     elif network_type == 1:
         color = '#00C1FF'
-    else:
+    elif network_type == 2:
         color = '#FF9300'
+    elif network_type == 3:
+        color = '#00FF70'
     for i in range(0,len(path)-1):
         sx = (x_coor[path[i]] - min_x)/den_x
         tx = (x_coor[path[i+1]] - min_x)/den_x
@@ -186,18 +189,21 @@ gui_font = pygame.font.SysFont('cambriamath', 20)
 button_run = Button("FIND PATH", 150, 50, (1465, 800), 6, '#0032FF', '#00AAFF')
 button_res = Button("RESTART", 150, 50, (1465, 870), 6, '#FD1414', '#FF5A5A')
 net_option = OptionBox(1465, 400, 150, 30, (150, 150, 150), (100, 200, 255), gui_font, ["Car", "Motorbike"])
+optimize_option = OptionBox(1465, 300, 150, 30, (150, 150, 150), (100, 200, 255), gui_font, ["Length", "Time"])
 
 G = load_graph_gpickle(graph_dir + '\Graph_car.gpickle')
+G_time = load_graph_gpickle(graph_dir + '\Graph_car_time.gpickle')
 x_coor,y_coor = get_coordinate(data_dir + '\HCM_data_car.pycgr')
 min_x, min_y, den_x, den_y = get_cache_map_gps(west=106.65258982689619,east=106.7185077956462,south=10.733603119492543,north=10.780486386368423,width=1378,height=998)
 src_exist = False
 des_exist = False
 car = True
+src_jam = False
+length_opt = True
 #car -- 0
 #motorbike -- 1
 #jam -- 2
-src_jam = False
-lines_jam = []
+#time -- 3
 
 fake_screen.fill('#FFFFFF')
 display_text(fake_screen, "TYPE:", gui_font, '#000000', (1410, 400), 30, 42)
@@ -253,16 +259,20 @@ while True:
                             start = time.time()
                             path = astar(G,index_src,index_des,x_coor,y_coor)
                             end = time.time()
+                            path_time = astar(G_time,index_src,index_des,x_coor,y_coor)
                             if car:
-                                draw_path(image,0,path,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
+                                if length_opt:
+                                    draw_path(image,0,path,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
+                                else:
+                                    draw_path(image,3,path_time,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
                             else:
-                                draw_path(image,1,path,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
-                                fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,70)))
-
-                            if len(lines_jam) > 0:
-                                for line_jam in lines_jam:
-                                    draw_path(image,2,line_jam,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
-                            fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 720), (320, 70)))
+                                if length_opt:
+                                    draw_path(image,1,path,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
+                                else:
+                                    draw_path(image,3,path_time,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)                                
+                            #DISPLAY PATH_LENGTH HERE
+                            print(path_length(G,path))
+                            fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,70)))
                             display_text(fake_screen,f"Finding path in {(end - start):.4f} s",pygame.font.Font(None, 20),'#000000',(1490,720),100,100)
 
                         except:
@@ -277,11 +287,12 @@ while True:
                     src_exist = False
                     des_exist = False
                     src_jam = False
-                    lines_jam = []
                     if car:
                         G = load_graph_gpickle(graph_dir + '\Graph_car.gpickle')
+                        G_time = load_graph_gpickle(graph_dir + '\Graph_car_time.gpickle')
                     else:
                         G = load_graph_gpickle(graph_dir + '\Graph_motorbike.gpickle')
+                        G_time = load_graph_gpickle(graph_dir + '\Graph_motorbike_time.gpickle')
                     fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,70)))
                     fake_screen.fill('#FFFFFF', rect=pygame.Rect((1450, 545), (240, 50)))
                     fake_screen.fill('#FFFFFF', rect=pygame.Rect((1450, 645), (240, 50)))
@@ -298,29 +309,38 @@ while True:
                         index_src_jam = get_index_point(fake_screen,x_src_jam,y_src_jam,x_coor,y_coor,min_x,min_y,den_x,den_y)
                         index_des_jam = get_index_point(fake_screen,x_click,y_click,x_coor,y_coor,min_x,min_y,den_x,den_y)
                         path_jam = astar(G,index_src_jam,index_des_jam,x_coor,y_coor)
-                        lines_jam.append(path_jam)
                         #Increase weight
                         jam_state_enable(G,path_jam)
                         draw_path(image,2,path_jam,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
                         src_jam = False   
 
-
-
-    fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,430),(320,100)))
+    fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,430),(320,60)))
     graph = net_option.update(events)
     if graph == 0:
-        display_text(fake_screen,"LOADING...",gui_font,'#000000', (1535,475),20,20)
+        display_text(screen,"LOADING...",gui_font,'#000000', (1535,490),20,20)
+        src_jam = False
         G = load_graph_gpickle(graph_dir + '\Graph_car.gpickle')
+        G_time = load_graph_gpickle(graph_dir + '\Graph_car_time.gpickle')
         x_coor,y_coor = get_coordinate(data_dir + '\HCM_data_car.pycgr')
-        fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,475),(320,20)))
+        fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,490),(320,20)))
         car = True
     elif graph == 1:
-        display_text(fake_screen,"LOADING...",gui_font,'#000000',(1535,475),20,20)
+        src_jam = False
+        display_text(screen,"LOADING...",gui_font,'#000000', (1535,490),20,20)
         G = load_graph_gpickle(graph_dir + '\Graph_motorbike.gpickle')
+        G_time = load_graph_gpickle(graph_dir + '\Graph_motorbike_time.gpickle')
         x_coor,y_coor = get_coordinate(data_dir + '\HCM_data_motorbike.pypgr')
-        fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,475),(320,20)))
+        fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,490),(320,20)))
         car = False
-
     net_option.draw(fake_screen)
+
+    fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,330),(320,60)))
+    opt = optimize_option.update(events)
+    if opt == 0:
+        length_opt = True
+    elif opt == 1:
+        length_opt = False
+    optimize_option.draw(fake_screen)
+
     screen.blit(pygame.transform.scale(fake_screen, screen.get_rect().size), (0, 0))
     pygame.display.update()

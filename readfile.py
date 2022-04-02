@@ -14,6 +14,7 @@ class Edge:
     target_id: int
     length: float
     max_speed: int
+    time: float
 
 class InputState(Enum):
     NMB_NODES = 2
@@ -53,8 +54,9 @@ def read_file(filename):
                     max_speed,
                     bidirectional,
                 ) = line.split(" ")
-                edges.append(Edge(int(source_id), int(target_id), float(length),int(max_speed)))
+                time = float(length)/float(max_speed)
+                edges.append(Edge(int(source_id), int(target_id), float(length),int(max_speed),float(time)))
                 if int(bidirectional)==1:
-                    edges.append(Edge(int(target_id), int(source_id), float(length),int(max_speed)))
+                    edges.append(Edge(int(target_id), int(source_id), float(length),int(max_speed),float(time)))
 
     return nodes, edges

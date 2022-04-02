@@ -16,6 +16,14 @@ def ConvertToGraph(filename,output_graph):
     nx.write_gml(G,output_graph + ".gml")
     nx.write_gpickle(G,output_graph + ".gpickle")
 
+def ConvertToGraphTime(filename,output_graph):
+    _, edge = read_file(filename)
+    edge = [(edge[i].source_id,edge[i].target_id,edge[i].time) for i in range(0,len(edge))]
+    G = nx.MultiDiGraph()
+    G.add_weighted_edges_from(edge)
+    nx.write_gml(G,output_graph + ".gml")
+    nx.write_gpickle(G,output_graph + ".gpickle")
+
 def load_graph_gpickle(filename):
     G = nx.read_gpickle(filename)
     return G
@@ -87,9 +95,16 @@ def get_nearest_node(x,y,point):
     _, index = mytree.query(point)
     return index
 
+def path_length(G,path):
+    length = 0
+    for i in range(0,len(path)-1):
+        length += G[path[i]][path[i+1]][0]['weight']
+    return length
 #ConvertToGraph("HCM_data_pedestrian.pypgr","Graph_pedestrian")
 # x_coor,y_coor = get_coordinate('data\HCM_data_car.pycgr')
 # G = load_graph_gpickle('graph/Graph_car.gpickle')
 # # print(astar(G,27958,7804,x_coor,y_coor))
 # max_weight = max(dict(G.edges).items(), key=lambda x: x[1]["weight"])
 # print(max_weight)
+
+#ConvertToGraphTime('data/HCM_data_motorbike.pypgr','Graph_motorbike_time')
