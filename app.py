@@ -8,51 +8,50 @@ import os
 import time
 
 
-def Pixel_to_utm(x, y, min_x, min_y, den_x, den_y):
+def Pixel_to_utm(x,y,min_x,min_y,den_x,den_y):
     x_graph = x * den_x + min_x
     y_graph = - y * den_y - min_y
     return x_graph, y_graph
 
-
-def get_cache_map_gps(west, east, south, north, width, height):
-    min_x, max_y, _, _ = utm.from_latlon(south, west)
-    max_x, min_y, _, _ = utm.from_latlon(north, east)
-    min_y, max_y = - min_y, - max_y
-    den_x = (max_x - min_x) / width
-    den_y = (max_y - min_y) / height
+def get_cache_map_gps(west,east,south,north,width,height):
+    min_x,max_y,_,_ = utm.from_latlon(south,west)
+    max_x,min_y,_,_ = utm.from_latlon(north,east)
+    min_y,max_y =  - min_y, - max_y
+    den_x = (max_x - min_x)/width
+    den_y = (max_y - min_y)/height
     return min_x, min_y, den_x, den_y
 
+def get_coor(x,y):
+    return utm.to_latlon(x,y,48,'P')
 
-def get_coor(x, y):
-    return utm.to_latlon(x, y, 48, 'P')
-
-
-def draw_src(surface, x, y):
-    icon = pygame.image.load('src-pin.png')
+def draw_src(surface,x,y):
+    icon=pygame.image.load('src-pin.png')
     surface.blit(icon, (x - 6, y - 19))
-
-
-def draw_des(surface, x, y):
+def draw_des(surface,x,y):
     icon = pygame.image.load('des-pin.png')
     surface.blit(icon, (x - 6, y - 19))
 
 def draw_traffic_point(surface,x,y):
     color = '#FF9300'
-    pygame.draw.circle(surface,color,(x,y),4)
+    pygame.draw.circle(surface,color,(x,y),2)
 
 def draw_path(surface,network_type,path,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix):
     if network_type == 0:
         color = '#004DFE'
+    elif network_type == 1:
+        color = '#00C1FF'
     else:
-        color = '#FE6C00'
-    for i in range(0, len(path) - 1):
-        sx = (x_coor[path[i]] - min_x) / den_x
-        tx = (x_coor[path[i + 1]] - min_x) / den_x
+        color = '#FF9300'
+    for i in range(0,len(path)-1):
+        sx = (x_coor[path[i]] - min_x)/den_x
+        tx = (x_coor[path[i+1]] - min_x)/den_x
 
-        sy = (- y_coor[path[i]] - min_y) / den_y
-        ty = (- y_coor[path[i + 1]] - min_y) / den_y
-
-        pygame.draw.line(surface,color,(sx - start_pos_pix,sy - start_pos_pix),(tx - start_pos_pix,ty - start_pos_pix),width=3)
+        sy = (- y_coor[path[i]] - min_y)/den_y
+        ty = (- y_coor[path[i+1]] - min_y)/den_y
+        if network_type == 2:
+            pygame.draw.line(surface,color,(sx + start_pos_pix,sy + start_pos_pix),(tx + start_pos_pix,ty + start_pos_pix),width=5)
+        else:
+            pygame.draw.line(surface,color,(sx + start_pos_pix,sy + start_pos_pix),(tx + start_pos_pix,ty + start_pos_pix),width=3)
 
 def display_text(screen,text,font,color,pos,width,height):
     text = font.render(text, True, color)
@@ -62,7 +61,7 @@ def display_text(screen,text,font,color,pos,width,height):
 
 def get_index_point(screen,x_click,y_click,x_coor,y_coor,min_x,min_y,den_x,den_y):
     screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,60)))
-    x_src, y_src = Pixel_to_utm(x_click + 1,y_click + 1,min_x,min_y,den_x,den_y)
+    x_src, y_src = Pixel_to_utm(x_click - 1,y_click - 1,min_x,min_y,den_x,den_y)
     index = get_nearest_node(x_coor,y_coor,[x_src,y_src]) 
     pygame.display.update()
     return index
@@ -165,6 +164,11 @@ class OptionBox():
                     return self.active_option
         return -1
 
+def jam_state_enable(graph,path_jam):
+    max_weight = 605.7 #Founded in Astar_algo.py
+    jam_density = 10
+    for i in range(0,len(path_jam)-1):
+        graph[path_jam[i]][path_jam[i+1]][0]['weight'] = jam_density*max_weight
 
 root = os.path.dirname(os.path.realpath(__file__))
 image_dir = root + '\map\HCM_map.png'
@@ -191,6 +195,9 @@ des_exist = False
 car = True
 #car -- 0
 #motorbike -- 1
+#jam -- 2
+src_jam = False
+lines_jam = []
 
 fake_screen.fill('#FFFFFF')
 display_text(fake_screen, "TYPE:", gui_font, '#000000', (1410, 400), 30, 42)
@@ -227,8 +234,8 @@ while True:
                         display_text(fake_screen, "Long:" + str(round(lon, 12)), gui_font, '#000000', (1563, 570), 10, 21)
                         src_exist = True
                     else:
-                        draw_des(image, x_click, y_click)
-                        x_des, y_des = x_click, y_click
+                        draw_des(image,x_click,y_click)
+                        x_des, y_des = x_click,y_click
                         lat_utm, lon_utm = Pixel_to_utm(x_click, y_click, min_x, min_y, den_x, den_y)
                         lat, lon = get_coor(lat_utm, lon_utm)
                         display_text(fake_screen, "Lat:" + str(round(lat, 12)), gui_font, '#000000', (1550, 650), 10, 21)
@@ -237,49 +244,83 @@ while True:
 
                 if button_run.press:
                     if not src_exist:
-                        fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 720), (320, 60)))
+                        fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 720), (320, 70)))
                         display_text(fake_screen, "NO SOURCE!", gui_font, '#FF0000', (1490, 720), 100, 100)
                     elif des_exist:
                         try:
                             index_src = get_index_point(fake_screen, x_src, y_src, x_coor, y_coor, min_x, min_y, den_x, den_y)
                             index_des = get_index_point(fake_screen, x_des, y_des, x_coor, y_coor, min_x, min_y, den_x, den_y)
                             start = time.time()
-                            path = astar(G, index_src, index_des, x_coor, y_coor)
+                            path = astar(G,index_src,index_des,x_coor,y_coor)
                             end = time.time()
                             if car:
-                                draw_path(image, 0, path, x_coor, y_coor, min_x, min_y, den_x, den_y, start_pos_pix=1)
+                                draw_path(image,0,path,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
                             else:
-                                draw_path(image, 1, path, x_coor, y_coor, min_x, min_y, den_x, den_y, start_pos_pix=1)
-                            display_text(fake_screen, f"Finding path in {(end - start):.4f} s",pygame.font.Font(None, 20), '#000000', (1490, 720), 100, 100)
+                                draw_path(image,1,path,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
+                                fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,70)))
+
+                            if len(lines_jam) > 0:
+                                for line_jam in lines_jam:
+                                    draw_path(image,2,line_jam,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
+                            fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 720), (320, 70)))
+                            display_text(fake_screen,f"Finding path in {(end - start):.4f} s",pygame.font.Font(None, 20),'#000000',(1490,720),100,100)
+
                         except:
-                            fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 720), (320, 60)))
-                            display_text(fake_screen, "Can't find path, try again!", gui_font, '#FF0000', (1490, 720), 100, 100)
+                            fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,70)))
+                            display_text(fake_screen,"Can't find path, try again!",gui_font,'#FF0000',(1490,720),100,100)
                     else:
-                        fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 720), (320, 60)))
-                        display_text(fake_screen, "NO DESTINATION!", gui_font, '#FF0000', (1490, 720), 100, 100)
-                # Restart button
+                        fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,70)))
+                        display_text(fake_screen,"NO DESTINATION!",gui_font,'#FF0000',(1490,720),100,100)
+                #Restart button
                 if button_res.press:
                     image = pygame.image.load(image_dir)
                     src_exist = False
                     des_exist = False
-                    fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 720), (320, 60)))
+                    src_jam = False
+                    lines_jam = []
+                    if car:
+                        G = load_graph_gpickle(graph_dir + '\Graph_car.gpickle')
+                    else:
+                        G = load_graph_gpickle(graph_dir + '\Graph_motorbike.gpickle')
+                    fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,720),(320,70)))
                     fake_screen.fill('#FFFFFF', rect=pygame.Rect((1450, 545), (240, 50)))
                     fake_screen.fill('#FFFFFF', rect=pygame.Rect((1450, 645), (240, 50)))
-    fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 430), (320, 100)))
+
+            if event.button == 3:
+                x_click, y_click = pygame.mouse.get_pos()
+                if x_click < 1379:
+                    if not src_jam:
+                        x_src_jam, y_src_jam = x_click, y_click
+                        draw_traffic_point(image,x_click,y_click)
+                        src_jam = True
+                    else:
+                        draw_traffic_point(image,x_click,y_click)
+                        index_src_jam = get_index_point(fake_screen,x_src_jam,y_src_jam,x_coor,y_coor,min_x,min_y,den_x,den_y)
+                        index_des_jam = get_index_point(fake_screen,x_click,y_click,x_coor,y_coor,min_x,min_y,den_x,den_y)
+                        path_jam = astar(G,index_src_jam,index_des_jam,x_coor,y_coor)
+                        lines_jam.append(path_jam)
+                        #Increase weight
+                        jam_state_enable(G,path_jam)
+                        draw_path(image,2,path_jam,x_coor,y_coor,min_x,min_y,den_x,den_y,start_pos_pix=1)
+                        src_jam = False   
+
+
+
+    fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,430),(320,100)))
     graph = net_option.update(events)
     if graph == 0:
-        display_text(fake_screen, "LOADING...", gui_font, '#000000', (1535, 475), 20, 20)
+        display_text(fake_screen,"LOADING...",gui_font,'#000000', (1535,475),20,20)
         G = load_graph_gpickle(graph_dir + '\Graph_car.gpickle')
-        x_coor, y_coor = get_coordinate(data_dir + '\HCM_data_car.pycgr')
-        fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 475), (320, 20)))
+        x_coor,y_coor = get_coordinate(data_dir + '\HCM_data_car.pycgr')
+        fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,475),(320,20)))
         car = True
     elif graph == 1:
-        display_text(fake_screen, "LOADING...", gui_font, '#000000', (1535, 475), 20, 20)
+        display_text(fake_screen,"LOADING...",gui_font,'#000000',(1535,475),20,20)
         G = load_graph_gpickle(graph_dir + '\Graph_motorbike.gpickle')
-        x_coor, y_coor = get_coordinate(data_dir + '\HCM_data_motorbike.pypgr')
-        fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 475), (320, 20)))
+        x_coor,y_coor = get_coordinate(data_dir + '\HCM_data_motorbike.pypgr')
+        fake_screen.fill('#FFFFFF',rect=pygame.Rect((1381,475),(320,20)))
         car = False
 
     net_option.draw(fake_screen)
     screen.blit(pygame.transform.scale(fake_screen, screen.get_rect().size), (0, 0))
-    pygame.display.flip()
+    pygame.display.update()
