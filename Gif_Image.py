@@ -169,21 +169,3 @@ class GIFImage(object):
         new.ptime = self.ptime
         new.reversed = self.reversed
         return new
-def main():
-    pygame.init()
-    screen = pygame.display.set_mode((640, 480))
-
-    hulk = GIFImage("Earth.gif")
-
-    while 1:
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-                return
-
-        screen.fill((255,255,255))
-        hulk.render(screen, (50, 0))
-        pygame.display.flip()
-
-if __name__ == "__main__":
-    main()
