@@ -41,7 +41,7 @@ class InputBox:
         return self.text
     def update(self):
         # Resize the box if the text is too long.
-        width = max(200, self.txt_surface.get_width()+10)
+        width = max(150, self.txt_surface.get_width()+10)
         self.rect.w = width
 
     def draw(self, screen):
@@ -52,10 +52,10 @@ class InputBox:
 
 
 def CreateInputBox():
-    input_box1 = InputBox(1480, 550, 10, 21)
-    input_box2 = InputBox(1500, 570, 10, 21)
-    input_box3 = InputBox(1480, 650, 10, 21)
-    input_box4 = InputBox(1500, 670, 10, 21)
+    input_box1 = InputBox(1510, 550, 10, 21)
+    input_box2 = InputBox(1510, 570, 10, 21)
+    input_box3 = InputBox(1510, 650, 10, 21)
+    input_box4 = InputBox(1510, 670, 10, 21)
     input_boxes = [input_box1, input_box2, input_box3, input_box4]
     pg.key.set_repeat(200, 25)
     return input_boxes

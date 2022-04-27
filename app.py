@@ -355,10 +355,10 @@ while True:
                         src_jam = False
     for box in input_boxes:
         box.update()
-    pygame.draw.rect(fake_screen, (255, 255, 255), (1480, 550, 200, 20))
-    pygame.draw.rect(fake_screen, (255, 255, 255), (1500, 570, 180, 20))
-    pygame.draw.rect(fake_screen, (255, 255, 255), (1480, 650, 200, 20))
-    pygame.draw.rect(fake_screen, (255, 255, 255), (1500, 670, 180, 20))
+    pygame.draw.rect(fake_screen, (255, 255, 255), (1510, 550, 160, 20))
+    pygame.draw.rect(fake_screen, (255, 255, 255), (1510, 570, 160, 20))
+    pygame.draw.rect(fake_screen, (255, 255, 255), (1510, 650, 160, 20))
+    pygame.draw.rect(fake_screen, (255, 255, 255), (1510, 670, 160, 20))
 
     for box in input_boxes:
         box.draw(fake_screen)
