@@ -294,6 +294,7 @@ while True:
                             path = astar(G, index_src, index_des, x_coor, y_coor)
                             end = time.time()
                             path_time = astar(G_time, index_src, index_des, x_coor, y_coor)
+
                             if car:
                                 if length_opt:
                                     draw_path(image, 0, path, x_coor, y_coor, min_x, min_y, den_x, den_y,
@@ -309,8 +310,10 @@ while True:
                                     draw_path(image, 3, path_time, x_coor, y_coor, min_x, min_y, den_x, den_y,
                                               start_pos_pix=1)
                                     # DISPLAY PATH_LENGTH HERE
-                            print(path_length(G, path))
-                            fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 720), (320, 70)))
+                            fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 690), (50, 70)))
+                            display_text(fake_screen, f"Path length is {path_length(G,path):.4f} m",
+                                         pygame.font.Font(None, 20), '#000000', (1490, 690), 100, 100)
+                            fake_screen.fill('#FFFFFF', rect=pygame.Rect((1381, 720), (50, 70)))
                             display_text(fake_screen, f"Finding path in {(end - start):.4f} s",
                                          pygame.font.Font(None, 20), '#000000', (1490, 720), 100, 100)
 
